@@ -15,7 +15,7 @@
     
     const CONFIG = {
         // Ruta base de los frames
-        framesPath: '../fotogramas/',
+        framesPath: 'fotogramas/',
         // Prefijo del nombre de archivo
         framePrefix: '',
         // Extensión de archivo
