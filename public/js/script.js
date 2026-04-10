@@ -158,31 +158,45 @@
      * Configura el canvas con las dimensiones correctas
      */
     function getViewportDimensions() {
-        const viewport = window.visualViewport;
+        // Usar window.innerWidth/Height - funciona en iOS Safari
         return {
-            width: viewport ? viewport.width : window.innerWidth,
-            height: viewport ? viewport.height : window.innerHeight
+            width: window.innerWidth,
+            height: window.innerHeight
         };
     }
 
     function setupCanvas() {
         if (!state.images.length) return;
 
-        const { width, height } = getViewportDimensions();
+        // Usar window.innerWidth/Height directamente - más confiable en iOS
+        const width = window.innerWidth;
+        const height = window.innerHeight;
 
-        // Aplicar pixel ratio para pantallas de alta densidad
-        const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+        // Para iOS: NO usar devicePixelRatio alto, causa problemas de escala
+        // Usar 1 para máxima compatibilidad
+        const pixelRatio = 1;
 
-        elements.canvas.width = width * pixelRatio;
-        elements.canvas.height = height * pixelRatio;
-        elements.canvas.style.width = `${width}px`;
-        elements.canvas.style.height = `${height}px`;
+        // Establecer dimensiones del buffer del canvas igual a viewport
+        elements.canvas.width = width;
+        elements.canvas.height = height;
+        
+        // Establecer dimensiones CSS explícitas
+        elements.canvas.style.width = width + 'px';
+        elements.canvas.style.height = height + 'px';
+        elements.canvas.style.position = 'absolute';
+        elements.canvas.style.top = '0';
+        elements.canvas.style.left = '0';
 
-        state.canvasWidth = elements.canvas.width;
-        state.canvasHeight = elements.canvas.height;
+        state.canvasWidth = width;
+        state.canvasHeight = height;
 
-        // Escalar contexto
-        state.canvasContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+        // Resetear transformaciones del contexto
+        state.canvasContext.setTransform(1, 0, 0, 1, 0, 0);
+        
+        // Forzar re-renderizado
+        state.lastRenderedFrame = -1;
+        
+        console.log('[v0] Canvas setup:', width, 'x', height);
     }
 
     // =============================================
@@ -201,24 +215,20 @@
         
         if (!image) return;
         
-        // Limpiar canvas
-        state.canvasContext.clearRect(
-            0, 0, 
-            elements.canvas.width, 
-            elements.canvas.height
-        );
+        // Usar dimensiones del canvas directamente
+        const canvasWidth = state.canvasWidth;
+        const canvasHeight = state.canvasHeight;
         
-        // Dimensiones del canvas en píxeles de pantalla
-        const canvasDisplayWidth = elements.canvas.width / (window.devicePixelRatio || 1);
-        const canvasDisplayHeight = elements.canvas.height / (window.devicePixelRatio || 1);
+        // Limpiar canvas
+        state.canvasContext.clearRect(0, 0, canvasWidth, canvasHeight);
         
         // Dimensiones de la imagen
         const imgWidth = image.naturalWidth;
         const imgHeight = image.naturalHeight;
         
         // Calcular escala para cubrir el canvas (cover)
-        const scaleX = canvasDisplayWidth / imgWidth;
-        const scaleY = canvasDisplayHeight / imgHeight;
+        const scaleX = canvasWidth / imgWidth;
+        const scaleY = canvasHeight / imgHeight;
         const scale = Math.max(scaleX, scaleY);
         
         // Dimensiones escaladas
@@ -226,8 +236,8 @@
         const scaledHeight = imgHeight * scale;
         
         // Posición para centrar
-        const x = (canvasDisplayWidth - scaledWidth) / 2;
-        const y = (canvasDisplayHeight - scaledHeight) / 2;
+        const x = (canvasWidth - scaledWidth) / 2;
+        const y = (canvasHeight - scaledHeight) / 2;
         
         // Dibujar imagen escalada y centrada
         state.canvasContext.drawImage(
@@ -404,8 +414,19 @@
             // Configurar event listeners
             window.addEventListener('scroll', handleScroll, { passive: true });
             window.addEventListener('resize', handleResize, { passive: true });
+            
+            // Para iOS Safari: escuchar cambios de orientación
+            window.addEventListener('orientationchange', () => {
+                // Esperar a que iOS actualice las dimensiones
+                setTimeout(() => {
+                    setupCanvas();
+                    renderFrame(Math.round(state.currentFrame));
+                }, 100);
+            });
+            
             if (window.visualViewport) {
                 window.visualViewport.addEventListener('resize', handleResize);
+                window.visualViewport.addEventListener('scroll', handleResize);
             }
             
             // Iniciar loop de animación
