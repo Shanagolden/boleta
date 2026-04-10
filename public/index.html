@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="description" content="Animación controlada por scroll - Frame by frame">
+    <title>Scroll Animation</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Contenedor principal de la animación -->
+    <div id="animation-container">
+        <canvas id="animation-canvas"></canvas>
+    </div>
+    
+    <!-- Contenedor de scroll (proporciona la altura para hacer scroll) -->
+    <div id="scroll-container"></div>
+    
+    <!-- Indicador de carga -->
+    <div id="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <p id="loading-text">Cargando frames... 0%</p>
+        </div>
+    </div>
+    
+    <!-- Indicador de progreso (opcional) -->
+    <div id="progress-bar"></div>
+    
+    <script src="js/script.js"></script>
+</body>
+</html>
